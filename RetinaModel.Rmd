@@ -1,0 +1,393 @@
+---
+title: "20210409_retinageneration"
+author: "ChangHee Lee"
+date: "4/9/2021"
+output: html_document
+---
+
+
+```{r}
+library(tidyverse)
+library("tictoc")
+```
+
+# Objectives & Background
+
+This is to roughly simulate the large-scale pattern of retinal cells in 1-D. Key point is that the retinal space expands at each iteration. 
+
+# Simple model: 1-tiered stem cell division
+
+## Specification
+
+A : radial glial stem cell, symmetric division up to `A_CYCLE1` cycles. After `A_CYCLE1` cycles, the cell switches to asymmetric division generating A | B, with equal probability to become B | A or A | B. After `A_CYCLE2` cycles, the RGC ceases to asymmetrically divide but divide into M | B. This latter part is not really necessary. Given the fastest cell cycle is 12 hours, and probably about 10 days at most for embryonic retinal development to occur, a realistic parameter range would be somewhere between 10-20 cycles.
+
+B : divides `B_CYCLE` cycles symmetrically. After this transit amplification (which will expand the retinal space), generates sequence of subtypes by asymmetric division ( B > C > D > E > F > G ) BC, BCD, BCDE, BCDEF, BCDEFG. 
+
+A vector grows by each steps. The suffix is the number of cell cycles that a cell has accrued. A_1 means the first cycle of A. A_5 means 5 rounds of cell cycles.
+
+It can be easily deduced that the "width" of the checkerboard pattern is proportional to the duration of asymmetric cell division, (`A_CYCLE2` - `A_CYCLE1` ) and exponent of `B_CYCLE`.
+
+### Parameter settings
+
+As a initial setup, set the parameter `A_CYCLE1` to 3, `A_CYCLE2` to 17. `A_CYCLE1` is chosen as such because this will just determine how many peaks you would get, and there are not that many, so it should be a very early event. Because `B_CYCLE` would just be a scaling factor (to adjust to the real width of the arclength), `B_CYCLE` is set to 1.
+
+```{r}
+A_CYCLE1 <- 1  # when it starts asymmetric division to generate randomly B type cells
+# When this grows larger, means that the final width becomes larger (exponential time?)
+A_CYCLE2 <- 15  # when terminates the asymmetric division and becomes mueller glia. This linearly grows the retina.
+B_CYCLE <- 2 # this is the intermediate transit-amplifying cells, which will generate this many round of cycles after which it will do asymmetric division to yield the neurons
+
+```
+
+### Initial condition 
+
+Also, the initial condition is set such that there is a difference in the "timer" of the A cells at the center to periphery.
+
+```{r}
+simulation <- list()
+
+simulation[[1]] <- c("A_3","A_4","A_6","A_6","A_7","A_12","A_12","A_7","A_6","A_6","A_4","A_3")
+
+simulation[[1]] <- c("A_1","A_3","A_6","A_6","A_7","A_12","A_12","A_7","A_6","A_6","A_3","A_1")
+
+
+
+simulation[[1]] <- c("A_1","A_1","A_6","A_6","A_7","A_12","A_12","A_7","A_6","A_6","A_1","A_1")
+
+```
+
+
+## Simulation
+
+```{r}
+proliferation <- function(ts, cells) {
+  return_v <- c()
+  
+  # sweep
+  for (i in 1:length(cells)) {
+    cell_type    <- strsplit(cells[i], "_")[[1]][1]
+    cycle.number <- as.integer(strsplit(cells[i], "_")[[1]][2])
+    
+    progenitor_type <- substring( cell_type, 1, 1 )
+    
+    left_cell <-
+    case_when(
+      progenitor_type == "A" & cycle.number < A_CYCLE1 ~ paste0( "A_", cycle.number + 1 ),
+      progenitor_type == "A" & cycle.number > A_CYCLE2  ~ paste0( "M_", ts ),   # after 10 cycle, changes to Mueller glia and B_1
+      progenitor_type == "A" ~ ifelse( # randomly choose between left or right
+                                  runif(1) >= 0.5, 
+                                  paste0( "A_", cycle.number + 1 ),
+                                  "B_1"
+                              ), # asymmetric division
+      progenitor_type == "B" & cycle.number < B_CYCLE ~ paste0( "B_", cycle.number + 1 ),
+      cells[i] == paste0( "B_", B_CYCLE )       ~ paste0( "XC_", ts ),
+      cell_type == "XC"          ~ paste0( "XCD_", cycle.number ),
+      cell_type == "XCD"         ~ paste0( "XCDE_", cycle.number ),
+      cell_type == "XCDE"        ~ paste0( "XCDEF_", cycle.number ),
+      cell_type == "XCDEF"       ~ paste0( "XCDEFR_", cycle.number ),
+      TRUE ~ cells[i]
+    )
+    
+    right_cell <-
+    case_when(
+      progenitor_type == "A" & cycle.number < A_CYCLE1 ~ paste0( "A_", cycle.number + 1 ),
+      progenitor_type == "A" & substring(left_cell,1,1) == "M" ~ "B_1",
+      progenitor_type == "A" ~ ifelse(  # asymmetric division 
+                                  left_cell != "B_1",
+                                  "B_1",
+                                  paste0( "A_", cycle.number + 1 )
+                                ),
+      progenitor_type == "B" & cycle.number < B_CYCLE ~ paste0( "B_", cycle.number + 1 ),
+      TRUE ~ ""  # for asymmetric division of differentiation, no progenitors generated!
+    )
+    
+    if (right_cell == "") {
+      return_v <- c(return_v, left_cell )
+    } else {
+      return_v <- c(return_v, left_cell, right_cell )
+    }
+  }
+  
+  return_v
+}
+```
+
+I just run this stepwise simulation until there is no growth and differentiation happening (The final P18 state in the paper).
+
+```{r}
+tictoc::tic()
+for (t in 2:35) {
+  tictoc::tic()
+  simulation[[t]] <- proliferation( t, simulation[[t-1]] )
+  print(t)
+  tictoc::toc()
+  
+  if (length(simulation[[t]]) == length(simulation[[t-1]]) ) {
+    if (all(simulation[[t]] == simulation[[t-1]]) ) {
+      break;
+    }
+  }
+}
+tictoc::toc()
+```
+
+## Growth of retinal space
+
+You can quickly visualize the "growth" of the 1D retinal space:
+
+```{r}
+plot(map_int( simulation, ~length(.x)) )
+```
+Note that after cycle 19, the size of the retina does not grow, but the B cells generate the corresponding neurons so there is the change in differentiation.
+
+## Spatial pattern of neuronal birthdate
+
+So first consider the actual birthdate generated from this simulation (note that for each random simulation due to the probabilistic nature of A | B and B | A asymmetric division, it can change).
+
+```{r}
+test <- map_int( simulation[[t]], ~as.integer(str_split(.x, "_")[[1]][2]) )
+
+p <-
+tibble(
+  position = 1:length(test),
+  birthdate = test
+) %>%
+  ggplot( aes( x = position, y = birthdate) ) +
+  geom_point() +
+  geom_line() +
+  labs( y = "Birthdate of C neuron (arbitrary cell cycle unit)")
+
+p
+```
+## Spatial pattern of the moving-average cumulative birthdating in West et al.
+
+
+```{r}
+library(zoo)
+
+k <- as.integer( length(test) * .05 ) # sliding window of 5%
+k
+
+tibble(
+  position = 1:length(test),
+  birthdate = test
+) %>%
+  mutate( 
+    rolling_mean = rollmeanr( 
+      birthdate, 
+      k, 
+      fill = NA 
+    ) 
+  ) %>%
+  ggplot( aes( x = position, y = rolling_mean) ) +
+  geom_point() +
+  geom_line()
+```
+
+The above is the average of birthdates, but in the experiment, it was the moving average of the *fraction* of cells that were at a certain birthdate..
+
+Calculate the fraction of cells centered between the median. The distribution of the birth date of the C neuron is this:
+
+```{r}
+tibble(
+  position = 1:length(test),
+  birthdate = test
+) %>%
+  ggplot( aes( x = birthdate) ) +
+  geom_density()
+```
+
+So choose (20-5)/2+5 ~ 12 as the rough middle point.
+
+```{r}
+cut.off <- 7
+
+
+tibble(
+  position = 1:length(test),
+  birthdate = test
+) %>%
+  mutate( 
+    rolling_mean = rollmeanr( 
+      birthdate <= cut.off, 
+      k, 
+      fill = NA 
+    ) 
+  ) %>%
+  ggplot( aes( x = position, y = rolling_mean) ) +
+  geom_point() +
+  geom_line() +
+  ggtitle( 
+    "Moving average across 1-D",
+    glue::glue("{k} cells window, {cut.off} cut-off birthdate")       
+  )
+```
+
+Considering the coarseness of the simulation, matches pretty well with the cyclic nature as well as the "plateau" of the center position (see the initial condition section above why this came about).
+
+How would later-born subtypes look? 
+
+```{r}
+cut.off <- 10
+
+tibble(
+  position = 1:length(test),
+  birthdate = test
+) %>%
+  mutate( 
+    rolling_mean = rollmeanr( 
+      birthdate <= cut.off, 
+      k, 
+      fill = NA 
+    ) 
+  ) %>%
+  ggplot( aes( x = position, y = rolling_mean) ) +
+  geom_point() +
+  geom_line() +
+  ggtitle( 
+    "Moving average across 1-D",
+    glue::glue("{k} cells window, {cut.off} cut-off birthdate")       
+  )
+```
+
+### Phase comparison between neurons
+
+We can calculate the "phase" of the different bipolar subtypes by adding fixed time interval to the "birthdate" of the neuron C, but this is in effect changing the cut-off so we could compare the phase difference, this corresponds to Figure 5C:
+
+
+```{r}
+cut.off <- 8
+
+k <- as.integer( length(test) * 0.05 )
+k
+tibble(
+  position = 1:length(test),
+  birthdate = test
+) %>%
+  mutate( 
+    rolling_mean1 = rollmeanr( 
+      birthdate <= cut.off, 
+      k, 
+      fill = NA 
+    ),
+    rolling_mean2 = rollmeanr( 
+      birthdate <= cut.off + 1, 
+      k, 
+      fill = NA 
+    ),
+    rolling_mean3 = rollmeanr( 
+      birthdate <= cut.off + 2, 
+      k, 
+      fill = NA 
+    )
+  ) %>%
+  ggplot( aes( x = position) ) +
+  geom_line( aes( y = rolling_mean1, colour = "salmon" ) ) +
+  geom_line( aes( y = rolling_mean2, colour = "navy" ) ) +
+  geom_line( aes( y = rolling_mean3, colour = "green" )) +
+  ggtitle( 
+    "Moving average across 1-D",
+    glue::glue("{k} cells window, {cut.off} cut-off birthdate")       
+  )
+```
+```{r}
+cut.off <- 10
+
+k <- as.integer( length(test) * 0.05 )
+k
+tibble(
+  position = 1:length(test),
+  birthdate = test
+) %>%
+  mutate( 
+    rolling_mean1 = rollmeanr( 
+      birthdate <= cut.off, 
+      k, 
+      fill = NA 
+    ),
+    rolling_mean2 = rollmeanr( 
+      birthdate > cut.off, 
+      k, 
+      fill = NA )
+  ) %>%
+ggplot( aes( x = position) ) +
+  geom_smooth( aes( y = rolling_mean1), colour = "#D7D67C" ,span=0.1,se=F)+
+  geom_smooth( aes( y = rolling_mean2), colour ="#56626F" ,span=0.1,se=F)+
+  ggtitle( 
+    "Moving average across 1-D",
+    glue::glue("{k} cells window, {cut.off} cut-off birthdate")       
+  )+theme_classic()
+
+```
+
+One can also calculate the short interval, by just selecting a specific cut-off:
+
+```{r}
+cut.off <- 9
+
+tibble(
+  position = 1:length(test),
+  birthdate = test
+) %>%
+  mutate( 
+    rolling_mean1 = rollmeanr( 
+      birthdate == cut.off, 
+      k, 
+      fill = NA 
+    ),
+    rolling_mean2 = rollmeanr( 
+      birthdate == cut.off + 1, 
+      k, 
+      fill = NA 
+    ),
+    rolling_mean3 = rollmeanr( 
+      birthdate == cut.off + 2, 
+      k, 
+      fill = NA 
+    )
+  ) %>%
+  ggplot( aes( x = position) ) +
+  geom_line( aes( y = rolling_mean1, colour = "salmon" ) ) +
+  geom_line( aes( y = rolling_mean2, colour = "navy" ) ) +
+  geom_line( aes( y = rolling_mean3, colour = "green" )) +
+  ggtitle( 
+    "Moving average across 1-D",
+    glue::glue("{k} cells window, {cut.off} cut-off birthdate")       
+  )
+```
+
+Note the misalignment of the "peaks", although this is really super coarse simulation, this is corresponding to Figure 5E.
+
+### Phase comparison within subtype neurons different birthdate
+
+Also going back to a specific subtype and looking at the terminal S-phase and Non-terminal S-phase. This is effectively cutting choosing a cut-off and then an interval:
+
+```{r}
+cut.off <- 7
+
+tibble(
+  position = 1:length(test),
+  birthdate = test
+) %>%
+  mutate( 
+    rolling_mean1 = rollmeanr( 
+      birthdate == cut.off, 
+      k, 
+      fill = NA 
+    ),
+    rolling_mean2 = rollmeanr( 
+      birthdate > cut.off, 
+      k, 
+      fill = NA 
+    )
+  ) %>%
+  ggplot( aes( x = position) ) +
+  geom_line( aes( y = rolling_mean1, colour = "salmon" ) ) +
+  geom_line( aes( y = rolling_mean2, colour = "navy" ) ) +
+  ggtitle( 
+    "Moving average across 1-D",
+    glue::glue("{k} cells window, {cut.off} cut-off birthdate")       
+  )
+```
+
+
