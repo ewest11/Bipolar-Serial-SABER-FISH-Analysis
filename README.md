@@ -59,4 +59,4 @@ Once all images have been aligned to the first session, the cells are segmented 
 
 Kishi, J. Y., Lapan, S. W., Beliveau, B. J., West, E. R., Zhu, A., Sasaki, H. M., Saka, S. K., Wang, Y., Cepko, C. L. & Yin, P. SABER amplifies FISH: enhanced multiplexed imaging of RNA and DNA in cells and tissues. Nat Methods 16, 533-544 (2019).
 
-
+Kishore R Mosaliganti, Ramil R Noche, Fengzhu Xiong, Ian A Swinburne, and Sean G Megason. Acme: automated cell morphology extractor for comprehensive reconstruction of cell membranes. PLoS computational biology, 8(12):e1002780, 2012.
