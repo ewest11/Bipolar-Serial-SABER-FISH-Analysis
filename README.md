@@ -1,7 +1,7 @@
 # Bipolar-Serial-SABER-FISH-Analysis
 
 ## File Processing
-This will walk through the import and processing of multichannel images of SABER-FISH data. The pipeline requires functions from BioFormats for file processing (https://www.openmicroscopy.org/bio-formats/), ANTS for image registration (https://github.com/ANTsX/ANTs), ACME for cell segmentation (https://github.com/krm15/ACME), and PD3D for SABER-FISH puncta detection (https://github.com/ewest11/PD3D).
+This will walk through the import and processing of multichannel images of SABER-FISH data. The pipeline requires functions from [BioFormats](https://www.openmicroscopy.org/bio-formats/) for file processing, [ANTS](https://github.com/ANTsX/ANTs) for image registration, [ACME](https://github.com/krm15/ACME) for cell segmentation, and [PD3D](https://github.com/ewest11/PD3D) for SABER-FISH puncta detection.
 
 Image files were stored on OMERO (https://www.openmicroscopy.org/omero/) and on Harvard Medical School's O2 cluster. The BASH scripts will need to be customized based on your cluster environment. 
 
