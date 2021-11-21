@@ -3,9 +3,9 @@
 ## File Processing
 This will walk through the import and processing of multichannel images of SABER-FISH data. The pipeline requires functions from [BioFormats](https://www.openmicroscopy.org/bio-formats/) for file processing, [ANTS](https://github.com/ANTsX/ANTs) for image registration, [ACME](https://github.com/krm15/ACME) for cell segmentation, and [PD3D](https://github.com/ewest11/PD3D) for SABER-FISH puncta detection.
 
-Image files were stored on OMERO (https://www.openmicroscopy.org/omero/) and on Harvard Medical School's O2 cluster. The BASH scripts will need to be customized based on your cluster environment. 
+Image files were stored on [OMERO](https://www.openmicroscopy.org/omero/) and on Harvard Medical School's O2 cluster. The BASH scripts will need to be customized based on your cluster environment. 
 
-The files were acquired using Nikon's Elements software as multipoint, multichannel Z-stack images. Each contains WGA as the first channel, and 2-3 additional channels of SABER-FISH markers or EdU/BrdU. To import these ND2 files to O2, we create a directory named NewImages and import the data from OMERO with the OMERO Dataset ID: 9526.
+The files were acquired using Nikon's Elements software as multipoint, multichannel Z-stack images. Each contains a wheat germ agglutinin stain (WGA) to mark cell membranes as the first channel, and 2-3 additional channels of SABER-FISH markers or EdU/BrdU. To import these ND2 files to O2, we create a directory named NewImages and import the data from OMERO with the OMERO Dataset ID: 9526.
 
 ```bash
 mkdir NewImages
@@ -53,7 +53,7 @@ for((i=1;i<=num_positions;i++)); do sbatch alignallchans.sh /PATHTODEV2/NewImage
 Now, each position subfolder will contain "deformed" files for each channel, corresponding to the dev2 files mapped onto the same coordinates as dev1. The alignment should be checked for each position by overlaying the WGA channel after deformation with the WGA channel from dev1. 
 
 ## Cell Segmentation
-Once all images have been aligned to the first session, the cells are segmented in 3-D based on the WGA stain from dev1. To segment the WGA stain from dev1, the ACMESEG.sh function was run as outlined in the PD3D package (https://github.com/ewest11/PD3D) from (Kishi et al., 2019). 
+Once all images have been aligned to the first session, the cells are segmented in 3-D based on the WGA stain from dev1. To segment the WGA stain from dev1, the ACMESEG.sh function was run as outlined in the [PD3D](https://github.com/ewest11/PD3D) package from (Kishi et al., 2019). 
 
 # Citations
 
