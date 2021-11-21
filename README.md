@@ -1,8 +1,9 @@
 # Bipolar-Serial-SABER-FISH-Analysis
 
-This will walk through the import and processing of multichannel images of SABER-FISH data.
+## File Processing
+This will walk through the import and processing of multichannel images of SABER-FISH data. The pipeline requires functions from BioFormats for file processing (https://www.openmicroscopy.org/bio-formats/), ANTS for image registration (https://github.com/ANTsX/ANTs), ACME for cell segmentation (https://github.com/krm15/ACME), and PD3D for SABER-FISH puncta detection (https://github.com/ewest11/PD3D).
 
-Files were stored on OMERO (https://www.openmicroscopy.org/omero/) and on Harvard Medical School's O2 cluster. The BASH scripts will need to be customized based on your cluster environment. 
+Image files were stored on OMERO (https://www.openmicroscopy.org/omero/) and on Harvard Medical School's O2 cluster. The BASH scripts will need to be customized based on your cluster environment. 
 
 The files were acquired using Nikon's Elements software as multipoint, multichannel Z-stack images. Each contains WGA as the first channel, and 2-3 additional channels of SABER-FISH markers or EdU/BrdU. To import these ND2 files to O2, we create a directory named NewImages and import the data from OMERO with the OMERO Dataset ID: 9526.
 
@@ -38,11 +39,7 @@ Now, there will be a file within each position subfolder in the dev2 parent fold
 /PATHTOANTS/ANTs/antsRegistrationSyNQuick.sh -d 3 -f /PATHTODEV1/NewImages_dev1/NewImages_dev1_1/image_1_C0.tiff -m /PATHTODEV2/NewImages_dev2/NewImages_dev2_1/image_dev2_1_C0.tiff -o /PATHTODEV2/NewImages_dev2/NewImages_dev2_1/image_dev2_1-aligned -j 1
 ```
 
-This script should be executed within each position subfolder.
-
-
-
-This creates multiple output files within each position subfolder:
+This script should be executed within each position subfolder, creating multiple output files therein:
 ```
 -alignedto1Warped.nii.gz: The Warped image is the remapped WGA file, which should match the WGA file from dev1
 -alignedto11Warp.nii.gz and -alignedto10GenericAffine.mat: Define the transform to map points in the dev2 WGA image onto the dev1 WGA image. 
@@ -54,3 +51,7 @@ for((i=1;i<=num_positions;i++)); do sbatch alignallchans.sh /PATHTODEV2/NewImage
 ```
 
 Now, each position subfolder will contain "deformed" files for each channel, corresponding to the dev2 files mapped onto the same coordinates as dev1. The alignment should be checked for each position by overlaying the WGA channel after deformation with the WGA channel from dev1. 
+
+## Cell Segmentation
+Once all images have been aligned to the first session, the cells are segmented in 3-D based on the WGA stain from dev1. To segment the WGA stain from dev1, the ACMESEG.sh function was run as outlined in the PD3D package (https://github.com/ewest11/PD3D) from (Kishi et al., 2019). 
+
