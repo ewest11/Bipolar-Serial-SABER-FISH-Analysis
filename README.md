@@ -19,7 +19,7 @@ sbatch ./OMEROtoO2.sh NewImages_dev1 9526
 The files then need to be split into individual fluorescent channels, renamed, and sorted based on their position. This is done by calling SplitandRenameChannels.sh.
 
 ```bash
-sbatch SplitandRenameChannels.sh /FULLPATH/NewImages_dev1
+sbatch SplitandRenameChannels.sh /FULLPATHTO/NewImages_dev1
 ```
 
 Each image session now must be aligned to the first image session (dev1). This is done by using Advanced Normalization Tools to create a mapping between the WGA images from each session (dev2-dev7) to session 1 (dev1). 
@@ -27,7 +27,7 @@ Each image session now must be aligned to the first image session (dev1). This i
 First, use a BASH script to write a function that will align each position:
 
 ```bash
-sbatch WriteAlignment.sh /PATHTO/NewImages_dev2/
+sbatch WriteAlignment.sh /FULLPATHTO/NewImages_dev2/
 ```
 
 Now, there will be a file within each position subfolder in the dev2 parent folder that reads (example for position 1):
