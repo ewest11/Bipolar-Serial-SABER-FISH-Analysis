@@ -58,6 +58,10 @@ Now, each position subfolder will contain "deformed" files for each channel, cor
 ## Cell Segmentation
 Once all images have been aligned to the first session, the cells are segmented in 3-D based on the WGA stain from dev1. To segment the WGA stain from dev1, the ACMESEG.sh function was run as outlined in the [PD3D](https://github.com/ewest11/PD3D) package from (Kishi et al., 2019). 
 
+
+# Retina Model
+The toy model of the proliferating retina in Figure 6 has been included in the RetinaModel.Rmd file.
+
 # Citations
 
 Kishi, J. Y., Lapan, S. W., Beliveau, B. J., West, E. R., Zhu, A., Sasaki, H. M., Saka, S. K., Wang, Y., Cepko, C. L. & Yin, P. SABER amplifies FISH: enhanced multiplexed imaging of RNA and DNA in cells and tissues. Nat Methods 16, 533-544 (2019).
