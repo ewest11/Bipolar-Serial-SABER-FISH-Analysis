@@ -8,6 +8,9 @@ Image files were stored on [OMERO](https://www.openmicroscopy.org/omero/) and on
 The files were acquired using Nikon's Elements software as multipoint, multichannel Z-stack images. Each contains a wheat germ agglutinin stain (WGA) to mark cell membranes as the first channel, and 2-3 additional channels of SABER-FISH markers or EdU/BrdU. To import these ND2 files to O2, we create a directory named NewImages and import the data from OMERO with the OMERO Dataset ID: 9526.
 
 ```bash
+srun --pty -p interactive -t 0-12 /bin/bash #Start an interactive session
+module load omero
+omero login #follow prompt to log into OMERO
 mkdir NewImages
 cd NewImages
 sbatch ./OMEROtoO2.sh NewImages_dev1 9526
